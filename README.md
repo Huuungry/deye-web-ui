@@ -1,6 +1,6 @@
 # Deye Web UI
 
-Simple web UI for reading Deye inverter data through Solarman and adjusting an EV charger based on available power.
+Simple web UI for reading Deye inverter data through Solarman and adjusting an ElectroS EV charger based on available power.
 
 The app includes:
 
