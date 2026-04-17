@@ -101,12 +101,11 @@ Important auth details used by this project:
 
 ## 2. Prepare Local Config
 
-This project uses a local `.env` file inside `deye-web-ui`.
+This project uses a local `.env` file in the repository root.
 
 Create it from the example:
 
 ```bash
-cd deye-web-ui
 cp .env.example .env
 ```
 
@@ -160,7 +159,6 @@ It is still recommended to set it explicitly if:
 Start the app:
 
 ```bash
-cd deye-web-ui
 docker compose up --build
 ```
 
@@ -203,8 +201,8 @@ You can configure:
 
 Runtime files are stored in:
 
-- `deye-web-ui/data/settings.json`
-- `deye-web-ui/data/app.log`
+- `data/settings.json`
+- `data/app.log`
 
 These are mounted into the container through Docker Compose:
 
@@ -217,7 +215,7 @@ That means the files stay on your host machine and survive container restarts.
 
 ## 7. Safe Sharing
 
-This folder is ready to share on GitHub:
+This repository is ready to share on GitHub:
 
 - real secrets stay in `.env`
 - `.env.example` is safe to commit
@@ -227,6 +225,5 @@ This folder is ready to share on GitHub:
 
 ## Notes
 
-- This is a separate app and does not change the simpler root scripts unless you do that yourself.
 - The web app starts idle. Automation does not begin on container startup.
 - The worker starts only after `Start Automation` or `Run Now`.
