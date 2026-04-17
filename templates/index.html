@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deye Web UI</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #f5f6f8; color: #222; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1, h2 { margin: 0 0 12px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .action-rows { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+    .action-row { display: flex; gap: 12px; flex-wrap: nowrap; }
+    .action-row form { flex: 0 0 auto; margin: 0; }
+    button { border: 0; border-radius: 12px; padding: 14px 18px; cursor: pointer; font-size: 16px; font-weight: bold; min-width: 220px; }
+    .primary { background: #0f766e; color: white; }
+    .warn { background: #b91c1c; color: white; }
+    .neutral { background: #334155; color: white; }
+    label { display: block; font-size: 13px; margin-bottom: 6px; }
+    input[type="text"], input[type="number"], input[type="time"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; box-sizing: border-box; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .mono { font-family: Menlo, monospace; font-size: 13px; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 14px; border-radius: 10px; overflow: auto; max-height: 420px; }
+    .kv { display: grid; grid-template-columns: 220px 1fr; gap: 8px; font-size: 14px; margin-bottom: 6px; }
+    .status-on { color: #15803d; font-weight: bold; }
+    .status-off { color: #b91c1c; font-weight: bold; }
+    .flash { background: #dbeafe; color: #1e3a8a; border-radius: 10px; padding: 10px 12px; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 10px; margin: 18px 0; flex-wrap: wrap; }
+    .tab-btn { background: #cbd5e1; color: #0f172a; }
+    .tab-btn.active { background: #0f766e; color: white; }
+    .sheet { display: none; }
+    .sheet.active { display: block; }
+    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .metric { border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; background: #fafafa; }
+    .metric-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 14px; }
+    .metric-label { color: #334155; font-weight: bold; }
+    .metric-value { font-family: Menlo, monospace; }
+    .bar { height: 14px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+    .solar { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .house { background: linear-gradient(90deg, #0f766e, #14b8a6); }
+    .battery { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+    .car { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+    .summary-card { border-radius: 12px; padding: 14px; color: white; }
+    .summary-card h3 { margin: 0 0 6px; font-size: 14px; font-weight: bold; opacity: 0.9; }
+    .summary-card .big { font-size: 32px; font-weight: bold; }
+    .summary-power { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+    .summary-potential { background: linear-gradient(135deg, #1d4ed8, #60a5fa); }
+    .summary-target { background: linear-gradient(135deg, #7c3aed, #c084fc); }
+    .state-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .state-list { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; }
+    .state-list h3 { margin: 0 0 10px; font-size: 16px; }
+    .state-list .kv { grid-template-columns: 170px 1fr; margin-bottom: 8px; }
+    .state-list .kv div:last-child { white-space: nowrap; }
+    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .card-head h2 { margin-bottom: 0; }
+    .small-btn { min-width: 0; padding: 10px 14px; font-size: 14px; }
+    @media (max-width: 900px) {
+      .grid, .settings-grid { grid-template-columns: 1fr; }
+      .kv { grid-template-columns: 1fr; }
+      .metric-grid, .summary-grid, .state-grid { grid-template-columns: 1fr; }
+      .action-row { flex-wrap: wrap; }
+      .card-head { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Deye Web UI</h1>
+    {% for message in messages %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+
+    <div class="tabs">
+      <button class="tab-btn active" type="button" data-sheet="run-sheet">Run Job</button>
+      <button class="tab-btn" type="button" data-sheet="scheduler-sheet">Scheduler</button>
+      <button class="tab-btn" type="button" data-sheet="config-sheet">Configuration</button>
+    </div>
+
+    <section id="run-sheet" class="sheet active">
+      <div class="grid">
+        <div class="card">
+          <h2>Automation</h2>
+          <div class="kv"><div>Automation enabled</div><div id="automation-enabled" class="{{ 'status-on' if status.automation_enabled else 'status-off' }}">{{ status.automation_enabled }}</div></div>
+          <div class="kv"><div>Scheduler status</div><div id="scheduler-status">{{ status.scheduler_status }}</div></div>
+          <div class="kv"><div>Worker running</div><div id="worker-running">{{ status.worker_running }}</div></div>
+          <div class="kv"><div>Last run</div><div id="last-run" class="mono">{{ status.last_run_at or '-' }}</div></div>
+          <div class="kv"><div>Next run</div><div id="next-run" class="mono">{{ status.next_run_at or '-' }}</div></div>
+          <div class="kv"><div>Last action</div><div id="last-action">{{ status.last_action or '-' }}</div></div>
+          <div class="action-rows">
+            <div class="action-row">
+              <form method="post" action="/action/start"><button class="primary" type="submit">Start Automation</button></form>
+              <form method="post" action="/action/stop"><button class="warn" type="submit">Stop Automation</button></form>
+            </div>
+            <div class="action-row">
+              <form method="post" action="/action/run-now"><button class="neutral" type="submit">Run Now</button></form>
+              <form method="post" action="/action/stop-charging"><button class="warn" type="submit">Stop Charging Now</button></form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Live State</h2>
+            <form method="post" action="/action/refresh-state">
+              <button class="neutral small-btn" type="submit">Refresh State</button>
+            </form>
+          </div>
+          <div class="metric-grid">
+            <div class="metric">
+              <div class="metric-head">
+                <div class="metric-label">Solar production</div>
+                <div id="production-value" class="metric-value">-</div>
+              </div>
+              <div class="bar"><div id="production-bar" class="bar-fill solar" style="width:0%"></div></div>
+            </div>
+            <div class="metric">
+              <div class="metric-head">
+                <div class="metric-label">House consumption</div>
+                <div id="consumption-value" class="metric-value">-</div>
+              </div>
+              <div class="bar"><div id="consumption-bar" class="bar-fill house" style="width:0%"></div></div>
+            </div>
+            <div class="metric">
+              <div class="metric-head">
+                <div class="metric-label">Battery charging</div>
+                <div id="battery-value" class="metric-value">-</div>
+              </div>
+              <div class="bar"><div id="battery-bar" class="bar-fill battery" style="width:0%"></div></div>
+            </div>
+            <div class="metric">
+              <div class="metric-head">
+                <div class="metric-label">Car charging power</div>
+                <div id="car-power-value" class="metric-value">-</div>
+              </div>
+              <div class="bar"><div id="car-power-bar" class="bar-fill car" style="width:0%"></div></div>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-card summary-power">
+              <h3>Available power</h3>
+              <div id="available-power" class="big">-</div>
+            </div>
+            <div class="summary-card summary-potential">
+              <h3>Potential amps</h3>
+              <div id="potential-amps" class="big">-</div>
+            </div>
+            <div class="summary-card summary-target">
+              <h3>Target amps</h3>
+              <div id="target-amps" class="big">-</div>
+            </div>
+          </div>
+
+          <div class="state-grid">
+            <div class="state-list">
+              <h3>Inverter</h3>
+              <div class="kv"><div>Production</div><div id="inv-production">-</div></div>
+              <div class="kv"><div>Consumption</div><div id="inv-consumption">-</div></div>
+              <div class="kv"><div>Battery SOC</div><div id="inv-battery-soc">-</div></div>
+              <div class="kv"><div>Battery charging</div><div id="inv-charging">-</div></div>
+              <div class="kv"><div>Battery discharging</div><div id="inv-discharging">-</div></div>
+            </div>
+            <div class="state-list">
+              <h3>Charger</h3>
+              <div class="kv"><div>Status</div><div id="charger-status">-</div></div>
+              <div class="kv"><div>Configured amps</div><div id="charger-amps">-</div></div>
+              <div class="kv"><div>Measured current</div><div id="charger-current">-</div></div>
+              <div class="kv"><div>Mains voltage</div><div id="charger-voltage">-</div></div>
+              <div class="kv"><div>Charging power</div><div id="charger-power">-</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <h2>Logs</h2>
+        <div class="actions" style="margin-bottom:12px;">
+          <form method="post" action="/action/clear-logs">
+            <button class="neutral" type="submit">Clear Logs</button>
+          </form>
+        </div>
+        <pre id="logs-box">{{ logs }}</pre>
+      </div>
+    </section>
+
+    <section id="scheduler-sheet" class="sheet">
+      <div class="card">
+        <h2>Scheduler</h2>
+        <form method="post" action="/settings">
+          <div class="settings-grid">
+            <div>
+              <label for="schedule_enabled">Scheduler enabled</label>
+              <input id="schedule_enabled" name="schedule_enabled" type="text" value="{{ 'true' if settings.schedule_enabled else 'false' }}">
+            </div>
+            <div>
+              <label for="automation_enabled">Automation enabled</label>
+              <input id="automation_enabled" name="automation_enabled" type="text" value="{{ 'true' if settings.automation_enabled else 'false' }}">
+            </div>
+            <div>
+              <label for="active_from">Active from</label>
+              <input id="active_from" name="active_from" type="time" value="{{ settings.active_from }}">
+            </div>
+            <div>
+              <label for="active_to">Active to</label>
+              <input id="active_to" name="active_to" type="time" value="{{ settings.active_to }}">
+            </div>
+            <div>
+              <label for="update_interval_seconds">Update interval seconds</label>
+              <input id="update_interval_seconds" name="update_interval_seconds" type="number" value="{{ settings.update_interval_seconds }}">
+            </div>
+            <div>
+              <label for="charger_min_amps_scheduler">Min amps</label>
+              <input id="charger_min_amps_scheduler" name="charger_min_amps" type="number" value="{{ settings.charger_min_amps }}">
+            </div>
+            <input type="hidden" name="charger_max_amps" value="{{ settings.charger_max_amps }}">
+            <input type="hidden" name="charger_voltage" value="{{ settings.charger_voltage }}">
+            <input type="hidden" name="charger_phases" value="{{ settings.charger_phases }}">
+            <input type="hidden" name="charger_reserve_watts" value="{{ settings.charger_reserve_watts }}">
+          </div>
+          <div class="actions">
+            <button class="primary" type="submit">Save Scheduler</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="config-sheet" class="sheet">
+      <div class="card">
+        <h2>Configuration</h2>
+        <form method="post" action="/settings">
+          <div class="settings-grid">
+            <div>
+              <label for="charger_min_amps">Min amps</label>
+              <input id="charger_min_amps" name="charger_min_amps" type="number" value="{{ settings.charger_min_amps }}">
+            </div>
+            <div>
+              <label for="charger_max_amps">Max amps</label>
+              <input id="charger_max_amps" name="charger_max_amps" type="number" value="{{ settings.charger_max_amps }}">
+            </div>
+            <div>
+              <label for="charger_voltage">Voltage</label>
+              <input id="charger_voltage" name="charger_voltage" type="number" step="0.1" value="{{ settings.charger_voltage }}">
+            </div>
+            <div>
+              <label for="charger_phases">Phases</label>
+              <input id="charger_phases" name="charger_phases" type="number" value="{{ settings.charger_phases }}">
+            </div>
+            <div>
+              <label for="charger_reserve_watts">Reserve watts</label>
+              <input id="charger_reserve_watts" name="charger_reserve_watts" type="number" step="0.1" value="{{ settings.charger_reserve_watts }}">
+            </div>
+            <input type="hidden" name="update_interval_seconds" value="{{ settings.update_interval_seconds }}">
+            <input type="hidden" name="schedule_enabled" value="{{ 'true' if settings.schedule_enabled else 'false' }}">
+            <input type="hidden" name="automation_enabled" value="{{ 'true' if settings.automation_enabled else 'false' }}">
+            <input type="hidden" name="active_from" value="{{ settings.active_from }}">
+            <input type="hidden" name="active_to" value="{{ settings.active_to }}">
+          </div>
+          <div class="actions">
+            <button class="primary" type="submit">Save Configuration</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+  <script>
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const sheets = document.querySelectorAll('.sheet');
+
+    function openSheet(sheetId) {
+      sheets.forEach((sheet) => {
+        sheet.classList.toggle('active', sheet.id === sheetId);
+      });
+      tabButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.sheet === sheetId);
+      });
+    }
+
+    tabButtons.forEach((button) => {
+      button.addEventListener('click', () => openSheet(button.dataset.sheet));
+    });
+
+    async function refreshStatus() {
+      const response = await fetch('/api/status');
+      const data = await response.json();
+      const inverter = data.runtime.inverter_state || {};
+      const charger = data.runtime.charger_state || {};
+      const maxPower = Math.max(
+        inverter.production || 0,
+        inverter.consumption || 0,
+        inverter.charging || 0,
+        charger.charging_power_w || 0,
+        1
+      );
+
+      function setBar(id, value) {
+        const width = Math.max(0, Math.min(100, (value / maxPower) * 100));
+        document.getElementById(id).style.width = `${width}%`;
+      }
+
+      function watts(value) {
+        if (value === null || value === undefined) return '-';
+        return `${Number(value).toFixed(1)} W`;
+      }
+
+      function amps(value) {
+        if (value === null || value === undefined) return '-';
+        return `${value} A`;
+      }
+
+      function volts(value) {
+        if (value === null || value === undefined) return '-';
+        return `${value} V`;
+      }
+
+      function percent(value) {
+        if (value === null || value === undefined) return '-';
+        return `${Number(value).toFixed(1)} %`;
+      }
+
+      document.getElementById('automation-enabled').textContent = data.status.automation_enabled;
+      document.getElementById('automation-enabled').className = data.status.automation_enabled ? 'status-on' : 'status-off';
+      document.getElementById('scheduler-status').textContent = data.status.scheduler_status;
+      document.getElementById('worker-running').textContent = data.status.worker_running;
+      document.getElementById('last-run').textContent = data.status.last_run_at || '-';
+      document.getElementById('next-run').textContent = data.status.next_run_at || '-';
+      document.getElementById('last-action').textContent = data.status.last_action || '-';
+
+      document.getElementById('production-value').textContent = watts(inverter.production);
+      document.getElementById('consumption-value').textContent = watts(inverter.consumption);
+      document.getElementById('battery-value').textContent = watts(inverter.charging);
+      document.getElementById('car-power-value').textContent = watts(charger.charging_power_w);
+
+      setBar('production-bar', inverter.production || 0);
+      setBar('consumption-bar', inverter.consumption || 0);
+      setBar('battery-bar', inverter.charging || 0);
+      setBar('car-power-bar', charger.charging_power_w || 0);
+
+      document.getElementById('available-power').textContent = watts(data.runtime.available_power_w);
+      document.getElementById('potential-amps').textContent = amps(data.runtime.potential_amps);
+      document.getElementById('target-amps').textContent = amps(data.runtime.target_amps);
+
+      document.getElementById('inv-battery-soc').textContent = percent(inverter.battery_soc);
+      document.getElementById('inv-production').textContent = watts(inverter.production);
+      document.getElementById('inv-consumption').textContent = watts(inverter.consumption);
+      document.getElementById('inv-charging').textContent = watts(inverter.charging);
+      document.getElementById('inv-discharging').textContent = watts(inverter.discharging);
+
+      document.getElementById('charger-status').textContent = charger.status_text || '-';
+      document.getElementById('charger-amps').textContent = amps(charger.current_amps);
+      document.getElementById('charger-current').textContent = amps(charger.measured_current);
+      document.getElementById('charger-voltage').textContent = volts(charger.mains_voltage);
+      document.getElementById('charger-power').textContent = watts(charger.charging_power_w);
+    }
+
+    async function refreshLogs() {
+      const response = await fetch('/api/logs');
+      const data = await response.json();
+      document.getElementById('logs-box').textContent = data.logs;
+    }
+
+    async function refreshAll() {
+      try {
+        await refreshStatus();
+        await refreshLogs();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    refreshAll();
+    setInterval(refreshAll, 5000);
+  </script>
+</body>
+</html>

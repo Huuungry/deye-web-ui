@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.vscode/
+data/app.log
+data/settings.json
+charger.py
+main.py
+solarman_api.py
+deye-web-ui/

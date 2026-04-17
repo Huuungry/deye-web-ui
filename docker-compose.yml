@@ -1,0 +1,11 @@
+services:
+  deye-web-ui:
+    build: .
+    container_name: deye-web-ui
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
