@@ -4,7 +4,7 @@ import time
 from flask import Flask, jsonify, redirect, render_template, request
 
 from charger_connector import get_charger_state, normalize_amps, set_amps, stop_charging_now
-from solarman_connector import get_current_state
+from solarman_connector import get_current_state, list_stations
 from web_config import (
     LOG_PATH,
     ensure_data_dir,
@@ -31,6 +31,8 @@ runtime = {
     "available_power_w": None,
     "potential_amps": None,
     "target_amps": None,
+    "station_warning": None,
+    "stations": [],
 }
 runtime_lock = threading.Lock()
 flash_messages = []
@@ -119,6 +121,7 @@ def refresh_live_state():
         available_power_w=available_power,
         potential_amps=potential_amps,
         target_amps=target_amps,
+        station_warning=inverter_state.get("station_warning"),
     )
     return inverter_state, charger_state, available_power, potential_amps, target_amps
 
@@ -127,6 +130,8 @@ def run_automation_cycle():
     inverter_state, charger_state, available_power, potential_amps, target_amps = refresh_live_state()
     update_runtime(last_run_at=now_text())
     log(f"Inverter state: {inverter_state}")
+    if inverter_state.get("station_warning"):
+        log(f"Station warning: {inverter_state['station_warning']}")
     log(f"Charger state: {charger_state}")
     log(f"Available power for charging: {available_power} W")
     log(f"Potential amps: {potential_amps}")
@@ -246,6 +251,8 @@ def index():
             "available_power_w": runtime["available_power_w"],
             "potential_amps": runtime["potential_amps"],
             "target_amps": runtime["target_amps"],
+            "station_warning": runtime["station_warning"],
+            "stations": runtime["stations"],
         }
     return render_template(
         "index.html",
@@ -277,6 +284,8 @@ def api_status():
                 "available_power_w": runtime["available_power_w"],
                 "potential_amps": runtime["potential_amps"],
                 "target_amps": runtime["target_amps"],
+                "station_warning": runtime["station_warning"],
+                "stations": runtime["stations"],
             },
         }
     return jsonify(payload)
@@ -353,6 +362,19 @@ def action_refresh_state():
         push_message(f"State refresh failed: {exc}")
         log(f"State refresh failed: {exc}")
     return redirect("/")
+
+
+@app.post("/action/load-stations")
+def action_load_stations():
+    return_sheet = request.form.get("return_sheet", "config-sheet")
+    try:
+        stations = list_stations()
+        update_runtime(stations=stations, last_action="loaded station ids")
+        push_message(f"Loaded {len(stations)} station ids")
+    except Exception as exc:
+        push_message(f"Load stations failed: {exc}")
+        log(f"Load stations failed: {exc}")
+    return redirect(f"/?sheet={return_sheet}")
 
 
 @app.post("/action/stop-charging")

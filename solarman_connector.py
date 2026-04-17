@@ -38,22 +38,71 @@ def get_token():
     return data["access_token"]
 
 
-def get_station_id(token):
-    station_id = env("SOLARMAN_STATION_ID")
-    if station_id:
-        return int(station_id)
-    data = api_post("/station/v1.0/list", {"page": 1, "size": 1}, token=token)
+def list_stations(token=None):
+    if token is None:
+        token = get_token()
+    data = api_post("/station/v1.0/list", {"page": 1, "size": 100}, token=token)
     station_list = data.get("stationList", [])
-    if not station_list:
+    stations = []
+    for station in station_list:
+        station_id = station.get("id")
+        if station_id is None:
+            continue
+        stations.append(
+            {
+                "id": int(station_id),
+                "name": station.get("stationName")
+                or station.get("name")
+                or station.get("stationTitle")
+                or f"Station {station_id}",
+            }
+        )
+    return stations
+
+
+def get_first_station(token):
+    stations = list_stations(token)
+    if not stations:
         raise RuntimeError("No stations found")
-    return int(station_list[0]["id"])
+    return stations[0]
+
+
+def get_station(token):
+    station_id = env("SOLARMAN_STATION_ID")
+    if not station_id:
+        return get_first_station(token), None
+    try:
+        parsed_id = int(station_id)
+    except ValueError:
+        station = get_first_station(token)
+        return station, f"Configured station id '{station_id}' is invalid, using {station['id']}"
+    return {"id": parsed_id, "name": f"Station {parsed_id}"}, None
+
+
+def get_station_realtime(token, station_id):
+    return api_post("/station/v1.0/realTime", {"stationId": station_id}, token=token)
 
 
 def get_current_state():
     token = get_token()
-    station_id = get_station_id(token)
-    data = api_post("/station/v1.0/realTime", {"stationId": station_id}, token=token)
+    station, warning = get_station(token)
+    try:
+        data = get_station_realtime(token, station["id"])
+    except Exception as exc:
+        if env("SOLARMAN_STATION_ID"):
+            fallback_station = get_first_station(token)
+            warning = (
+                f"Configured station id {station['id']} failed, using {fallback_station['id']}: {exc}"
+            )
+            station = fallback_station
+            data = get_station_realtime(token, station["id"])
+        else:
+            raise
+
     return {
+        "station_id": station["id"],
+        "station_name": station["name"],
+        "station_warning": warning,
         "production": float(data.get("generationPower") or 0),
         "consumption": float(data.get("usePower") or 0),
         "charging": abs(float(data.get("chargePower") or 0)),

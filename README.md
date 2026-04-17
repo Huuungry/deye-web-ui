@@ -154,6 +154,22 @@ It is still recommended to set it explicitly if:
 - your account has more than one station
 - you want to be sure the app always uses the same plant
 
+### Get station IDs from the app
+
+You can also load station IDs directly from the web UI:
+
+1. Start the app
+2. Open `http://localhost:8080`
+3. Go to the `Configuration` tab
+4. In `Station Tools`, click `Load Station IDs`
+5. Read the IDs from the `Available Stations` list
+
+Then copy the station ID you want into `.env`:
+
+```text
+SOLARMAN_STATION_ID=your_station_id
+```
+
 ## 4. Run with Docker
 
 Start the app:
@@ -196,6 +212,9 @@ You can configure:
 - charger voltage
 - charger phases
 - reserve watts
+- load and view all Solarman station IDs
+
+If `SOLARMAN_STATION_ID` is set incorrectly, the app will try to fall back to the first available station instead of crashing.
 
 ## 6. Runtime Files
 

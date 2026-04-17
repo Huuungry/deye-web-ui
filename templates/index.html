@@ -55,6 +55,14 @@
     .state-list h3 { margin: 0 0 10px; font-size: 16px; }
     .state-list .kv { grid-template-columns: 170px 1fr; margin-bottom: 8px; }
     .state-list .kv div:last-child { white-space: nowrap; }
+    .note { font-size: 13px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 12px; margin-top: 12px; }
+    .station-list { margin-top: 14px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #fafafa; }
+    .station-list h3 { margin: 0 0 10px; font-size: 16px; }
+    .station-list ul { margin: 0; padding-left: 20px; }
+    .station-list li { margin-bottom: 6px; }
+    .station-tools { margin-top: 18px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+    .station-tools h3 { margin: 0 0 8px; font-size: 18px; }
+    .station-tools p { margin: 0 0 12px; color: #475569; font-size: 14px; }
     .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .card-head h2 { margin-bottom: 0; }
     .small-btn { min-width: 0; padding: 10px 14px; font-size: 14px; }
@@ -155,9 +163,13 @@
             </div>
           </div>
 
+          <div id="station-warning" class="note" style="display:none;"></div>
+
           <div class="state-grid">
             <div class="state-list">
               <h3>Inverter</h3>
+              <div class="kv"><div>Station ID</div><div id="inv-station-id">-</div></div>
+              <div class="kv"><div>Station name</div><div id="inv-station-name">-</div></div>
               <div class="kv"><div>Production</div><div id="inv-production">-</div></div>
               <div class="kv"><div>Consumption</div><div id="inv-consumption">-</div></div>
               <div class="kv"><div>Battery SOC</div><div id="inv-battery-soc">-</div></div>
@@ -263,12 +275,36 @@
             <button class="primary" type="submit">Save Configuration</button>
           </div>
         </form>
+        <div class="station-tools">
+          <h3>Station Tools</h3>
+          <p>Load all available Solarman station IDs without changing charger settings.</p>
+          <div class="actions">
+            <form method="post" action="/action/load-stations">
+              <input type="hidden" name="return_sheet" value="config-sheet">
+              <button class="neutral" type="submit">Load Station IDs</button>
+            </form>
+          </div>
+          <div class="station-list">
+            <h3>Available Stations</h3>
+            <ul id="station-list-items">
+              {% if runtime.stations %}
+                {% for station in runtime.stations %}
+                  <li>{{ station.id }} - {{ station.name }}</li>
+                {% endfor %}
+              {% else %}
+                <li>No stations loaded yet</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
   </div>
   <script>
     const tabButtons = document.querySelectorAll('.tab-btn');
     const sheets = document.querySelectorAll('.sheet');
+    const params = new URLSearchParams(window.location.search);
+    const activeSheetFromUrl = params.get('sheet');
 
     function openSheet(sheetId) {
       sheets.forEach((sheet) => {
@@ -343,6 +379,18 @@
       document.getElementById('potential-amps').textContent = amps(data.runtime.potential_amps);
       document.getElementById('target-amps').textContent = amps(data.runtime.target_amps);
 
+      const stationWarning = data.runtime.station_warning;
+      const stationWarningBox = document.getElementById('station-warning');
+      if (stationWarning) {
+        stationWarningBox.textContent = stationWarning;
+        stationWarningBox.style.display = 'block';
+      } else {
+        stationWarningBox.textContent = '';
+        stationWarningBox.style.display = 'none';
+      }
+
+      document.getElementById('inv-station-id').textContent = inverter.station_id || '-';
+      document.getElementById('inv-station-name').textContent = inverter.station_name || '-';
       document.getElementById('inv-battery-soc').textContent = percent(inverter.battery_soc);
       document.getElementById('inv-production').textContent = watts(inverter.production);
       document.getElementById('inv-consumption').textContent = watts(inverter.consumption);
@@ -354,6 +402,16 @@
       document.getElementById('charger-current').textContent = amps(charger.measured_current);
       document.getElementById('charger-voltage').textContent = volts(charger.mains_voltage);
       document.getElementById('charger-power').textContent = watts(charger.charging_power_w);
+
+      const stationListItems = document.getElementById('station-list-items');
+      const stations = data.runtime.stations || [];
+      if (stations.length) {
+        stationListItems.innerHTML = stations
+          .map((station) => `<li>${station.id} - ${station.name}</li>`)
+          .join('');
+      } else {
+        stationListItems.innerHTML = '<li>No stations loaded yet</li>';
+      }
     }
 
     async function refreshLogs() {
@@ -369,6 +427,10 @@
       } catch (error) {
         console.error(error);
       }
+    }
+
+    if (activeSheetFromUrl) {
+      openSheet(activeSheetFromUrl);
     }
 
     refreshAll();
