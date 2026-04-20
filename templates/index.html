@@ -168,7 +168,6 @@
           <div class="state-grid">
             <div class="state-list">
               <h3>Inverter</h3>
-              <div class="kv"><div>Station ID</div><div id="inv-station-id">-</div></div>
               <div class="kv"><div>Station name</div><div id="inv-station-name">-</div></div>
               <div class="kv"><div>Production</div><div id="inv-production">-</div></div>
               <div class="kv"><div>Consumption</div><div id="inv-consumption">-</div></div>
@@ -228,10 +227,11 @@
               <label for="charger_min_amps_scheduler">Min amps</label>
               <input id="charger_min_amps_scheduler" name="charger_min_amps" type="number" value="{{ settings.charger_min_amps }}">
             </div>
+            <input type="hidden" name="min_battery_soc" value="{{ settings.min_battery_soc }}">
             <input type="hidden" name="charger_max_amps" value="{{ settings.charger_max_amps }}">
-            <input type="hidden" name="charger_voltage" value="{{ settings.charger_voltage }}">
             <input type="hidden" name="charger_phases" value="{{ settings.charger_phases }}">
             <input type="hidden" name="charger_reserve_watts" value="{{ settings.charger_reserve_watts }}">
+            <input type="hidden" name="return_sheet" value="scheduler-sheet">
           </div>
           <div class="actions">
             <button class="primary" type="submit">Save Scheduler</button>
@@ -254,8 +254,8 @@
               <input id="charger_max_amps" name="charger_max_amps" type="number" value="{{ settings.charger_max_amps }}">
             </div>
             <div>
-              <label for="charger_voltage">Voltage</label>
-              <input id="charger_voltage" name="charger_voltage" type="number" step="0.1" value="{{ settings.charger_voltage }}">
+              <label for="min_battery_soc">Min battery SOC %</label>
+              <input id="min_battery_soc" name="min_battery_soc" type="number" step="0.1" value="{{ settings.min_battery_soc }}">
             </div>
             <div>
               <label for="charger_phases">Phases</label>
@@ -270,6 +270,7 @@
             <input type="hidden" name="automation_enabled" value="{{ 'true' if settings.automation_enabled else 'false' }}">
             <input type="hidden" name="active_from" value="{{ settings.active_from }}">
             <input type="hidden" name="active_to" value="{{ settings.active_to }}">
+            <input type="hidden" name="return_sheet" value="config-sheet">
           </div>
           <div class="actions">
             <button class="primary" type="submit">Save Configuration</button>
@@ -357,6 +358,14 @@
         return `${Number(value).toFixed(1)} %`;
       }
 
+      function socWithVoltage(soc, voltage) {
+        if (soc === null || soc === undefined) return '-';
+        if (voltage === null || voltage === undefined) {
+          return `${Number(soc).toFixed(1)} %`;
+        }
+        return `${Number(soc).toFixed(1)} % (${Number(voltage).toFixed(1)} V)`;
+      }
+
       document.getElementById('automation-enabled').textContent = data.status.automation_enabled;
       document.getElementById('automation-enabled').className = data.status.automation_enabled ? 'status-on' : 'status-off';
       document.getElementById('scheduler-status').textContent = data.status.scheduler_status;
@@ -389,9 +398,8 @@
         stationWarningBox.style.display = 'none';
       }
 
-      document.getElementById('inv-station-id').textContent = inverter.station_id || '-';
       document.getElementById('inv-station-name').textContent = inverter.station_name || '-';
-      document.getElementById('inv-battery-soc').textContent = percent(inverter.battery_soc);
+      document.getElementById('inv-battery-soc').textContent = socWithVoltage(inverter.battery_soc, inverter.battery_voltage);
       document.getElementById('inv-production').textContent = watts(inverter.production);
       document.getElementById('inv-consumption').textContent = watts(inverter.consumption);
       document.getElementById('inv-charging').textContent = watts(inverter.charging);

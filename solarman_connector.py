@@ -67,6 +67,13 @@ def get_first_station(token):
     return stations[0]
 
 
+def find_station_by_id(token, station_id):
+    for station in list_stations(token):
+        if station["id"] == station_id:
+            return station
+    return None
+
+
 def get_station(token):
     station_id = env("SOLARMAN_STATION_ID")
     if not station_id:
@@ -76,11 +83,25 @@ def get_station(token):
     except ValueError:
         station = get_first_station(token)
         return station, f"Configured station id '{station_id}' is invalid, using {station['id']}"
+    station = find_station_by_id(token, parsed_id)
+    if station is not None:
+        return station, None
     return {"id": parsed_id, "name": f"Station {parsed_id}"}, None
 
 
 def get_station_realtime(token, station_id):
     return api_post("/station/v1.0/realTime", {"stationId": station_id}, token=token)
+
+
+def get_device_current_data(token, device_sn):
+    return api_post("/device/v1.0/currentData", {"deviceSn": device_sn}, token=token)
+
+
+def extract_device_value(data_list, key):
+    for item in data_list:
+        if item.get("key") == key:
+            return item.get("value")
+    return None
 
 
 def get_current_state():
@@ -99,6 +120,23 @@ def get_current_state():
         else:
             raise
 
+    battery_voltage = None
+    device_sn = env("SOLARMAN_DEVICE_SN")
+    if device_sn:
+        try:
+            device_data = get_device_current_data(token, device_sn)
+            data_list = device_data.get("dataList", [])
+            battery_voltage_value = extract_device_value(data_list, "B_V1")
+            if battery_voltage_value is None:
+                battery_voltage_value = extract_device_value(data_list, "BMS_B_V1")
+            if battery_voltage_value is not None:
+                battery_voltage = float(battery_voltage_value)
+        except Exception as exc:
+            if warning:
+                warning = f"{warning}; battery voltage unavailable: {exc}"
+            else:
+                warning = f"Battery voltage unavailable: {exc}"
+
     return {
         "station_id": station["id"],
         "station_name": station["name"],
@@ -108,4 +146,5 @@ def get_current_state():
         "charging": abs(float(data.get("chargePower") or 0)),
         "discharging": float(data.get("dischargePower") or 0),
         "battery_soc": float(data.get("batterySoc") or 0),
+        "battery_voltage": battery_voltage,
     }

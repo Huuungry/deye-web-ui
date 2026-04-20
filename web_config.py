@@ -81,9 +81,9 @@ def default_settings():
         "active_from": "08:00",
         "active_to": "20:00",
         "charger_phases": int(env("CHARGER_PHASES", 1)),
-        "charger_voltage": float(env("CHARGER_VOLTAGE", 230)),
         "charger_min_amps": int(env("CHARGER_MIN_AMPS", 6)),
         "charger_max_amps": int(env("CHARGER_MAX_AMPS", 16)),
+        "min_battery_soc": float(env("MIN_BATTERY_SOC", 0)),
         "charger_reserve_watts": float(env("CHARGER_RESERVE_WATTS", 250)),
         "update_interval_seconds": int(env("UPDATE_INTERVAL_SECONDS", 300)),
     }

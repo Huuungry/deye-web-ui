@@ -52,9 +52,14 @@ def calculate_target_amps(inverter_state, charger_state, settings):
         - non_charger_consumption
         - settings["charger_reserve_watts"]
     )
-    watts_per_amp = settings["charger_voltage"] * settings["charger_phases"]
+    charger_voltage = charger_state.get("mains_voltage") or 230
+    watts_per_amp = charger_voltage * settings["charger_phases"]
     potential_amps = int(available_power // watts_per_amp)
     target_amps = potential_amps
+    battery_soc = inverter_state.get("battery_soc")
+    min_battery_soc = settings["min_battery_soc"]
+    if battery_soc is not None and battery_soc <= min_battery_soc:
+        target_amps = 0
     if target_amps < settings["charger_min_amps"]:
         target_amps = 0
     if target_amps > settings["charger_max_amps"]:
@@ -128,6 +133,7 @@ def refresh_live_state():
 
 def run_automation_cycle():
     inverter_state, charger_state, available_power, potential_amps, target_amps = refresh_live_state()
+    settings = load_settings()
     update_runtime(last_run_at=now_text())
     log(f"Inverter state: {inverter_state}")
     if inverter_state.get("station_warning"):
@@ -136,6 +142,11 @@ def run_automation_cycle():
     log(f"Available power for charging: {available_power} W")
     log(f"Potential amps: {potential_amps}")
     log(f"Target amps: {target_amps}")
+    battery_soc = inverter_state.get("battery_soc")
+    if battery_soc is not None and battery_soc <= settings["min_battery_soc"]:
+        log(
+            f"Battery SOC {battery_soc:.1f}% is not above minimum {settings['min_battery_soc']:.1f}%, charging blocked"
+        )
     if not charger_state["online"]:
         log("Charger is offline, nothing to do")
         update_runtime(last_action="charger offline")
@@ -298,11 +309,12 @@ def api_logs():
 
 @app.post("/settings")
 def update_settings():
+    return_sheet = request.form.get("return_sheet", "config-sheet")
     settings = load_settings()
     settings["charger_min_amps"] = int(request.form["charger_min_amps"])
     settings["charger_max_amps"] = int(request.form["charger_max_amps"])
-    settings["charger_voltage"] = float(request.form["charger_voltage"])
     settings["charger_phases"] = int(request.form["charger_phases"])
+    settings["min_battery_soc"] = float(request.form["min_battery_soc"])
     settings["charger_reserve_watts"] = float(request.form["charger_reserve_watts"])
     settings["update_interval_seconds"] = int(request.form["update_interval_seconds"])
     settings["schedule_enabled"] = request.form["schedule_enabled"].strip().lower() == "true"
@@ -314,7 +326,7 @@ def update_settings():
     with runtime_lock:
         runtime["next_run_at"] = None
         runtime["next_run_ts"] = None
-    return redirect("/")
+    return redirect(f"/?sheet={return_sheet}")
 
 
 @app.post("/action/start")

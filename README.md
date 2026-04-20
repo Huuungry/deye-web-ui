@@ -120,6 +120,7 @@ SOLARMAN_PASSWORD=your_solarman_password
 SOLARMAN_EMAIL=your_email@example.com
 SOLARMAN_BASE_URL=https://globalapi.solarmanpv.com
 SOLARMAN_STATION_ID=your_station_id
+SOLARMAN_DEVICE_SN=your_inverter_serial_number
 ```
 
 ### Required charger values
@@ -133,9 +134,9 @@ CHARGER_PASSWORD=your_charger_password
 
 ```text
 CHARGER_PHASES=1
-CHARGER_VOLTAGE=230
 CHARGER_MIN_AMPS=6
 CHARGER_MAX_AMPS=14
+MIN_BATTERY_SOC=0
 CHARGER_RESERVE_WATTS=250
 UPDATE_INTERVAL_SECONDS=360
 APP_TIMEZONE=Europe/Kyiv
@@ -169,6 +170,18 @@ Then copy the station ID you want into `.env`:
 ```text
 SOLARMAN_STATION_ID=your_station_id
 ```
+
+### Find `SOLARMAN_DEVICE_SN`
+
+To show battery voltage in the app, also set your inverter serial number:
+
+```text
+SOLARMAN_DEVICE_SN=your_inverter_serial_number
+```
+
+You can find it in Solarman here:
+
+- https://home.solarmanpv.com/plant/infos/device
 
 ## 4. Run with Docker
 
@@ -209,7 +222,7 @@ You can configure:
 
 - min amps
 - max amps
-- charger voltage
+- min battery SOC
 - charger phases
 - reserve watts
 - load and view all Solarman station IDs
